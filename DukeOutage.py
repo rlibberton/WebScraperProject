@@ -1,4 +1,7 @@
 from selenium import webdriver
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait # available since 2.4.0
+from selenium.webdriver.support import expected_conditions as EC # available since 2.26.0
 from bs4 import BeautifulSoup
 import pandas as pd
 #import MySQLdb
@@ -14,31 +17,29 @@ active_power_outages = [] #List to store the active power outages
 customers_without_power = [] #List to store number of customers without power
 driver.get('https://outagemaps.duke-energy.com/#/carolinas') #communicates with webdriver to open URL
 
-driver.implicitly_wait(10)
-python_button= driver.find_element_by_css_selector('.jurisdiction-selection-select-state:nth-child(4) > .jurisdiction-selection-select-state__item:nth-child(1) .jurisdiction-selection-select-state__item-text').click() #clicks the "Carolinas "
 
+python_button = WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.XPATH, '/html/body/app-root/carolinas-selection/section/div/div[2]/div[1]/a/span')))
+python_button.click() #clicks the "Carolinas"
 
-driver.implicitly_wait(10)
-#soup = BeautifulSoup(content, 'lxml')
+python_button2 = WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.XPATH, "/html/body/app-root/outage-home/section/user-onboarding/div/div/div/div/div[3]/button")))
+python_button2.click()
 
-#while True:
- #   driver.implicitly_wait(5)
- #   spans = soup.find_all('span', {'class': 'county-panel-outage-info-heading-text'}) # or span by class name
- #   if spans:
- #       break
-driver.implicitly_wait(10)
-button2 = driver.find_element_by_xpath("/html/body/app-root/outage-home/section/user-onboarding/div/div/div/div/div[3]/button").click()
-driver.implicitly_wait(10)
-button3 = driver.find_element_by_xpath("/html/body/app-root/outage-home/section/maps-panel/div/section/button").click()
-driver.implicitly_wait(10)
-button4 = driver.find_element_by_xpath("/html/body/app-root/outage-home/section/maps-panel/div/section[2]/div[3]/div[3]/button[2]").click()
-driver.implicitly_wait(10)
+python_button3 = WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.XPATH, "/html/body/app-root/outage-home/section/maps-panel/div/section/button")))
+python_button3.click()
+
+python_button4 = WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.XPATH, "/html/body/app-root/outage-home/section/maps-panel/div/section[2]/div[3]/div[3]/button[2]")))
+python_button4.click()
 
 content = driver.page_source 
 soup = BeautifulSoup(content, 'lxml')
-driver.implicitly_wait(10)
-spans = soup.find_all('span', {'class': "county-panel-outage-info-heading-text"}) # or span by class name
+
+#Prints all the counties in the outage summary
+spans = soup.find_all('span', {'class': "county-panel-outage-info-heading-text"})
 for span in spans:
-    print(span.text)
+ #   active_power_outages.append(span.find('span', {'class': 'county-panel-outage-info-text'})[0])
+    counties.append(span.text)  
+print(counties)  
+print(len(spans))
+print(active_power_outages)
 
 print('Driver has ended')
