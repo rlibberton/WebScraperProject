@@ -15,6 +15,7 @@ driver = webdriver.Chrome("/usr/local/bin/chromedriver")
 counties = [] #List to store the name of the counties
 active_power_outages = [] #List to store the active power outages
 customers_without_power = [] #List to store number of customers without power
+customers_served = []
 driver.get('https://outagemaps.duke-energy.com/#/carolinas') #communicates with webdriver to open URL
 
 
@@ -34,12 +35,16 @@ content = driver.page_source
 soup = BeautifulSoup(content, 'lxml')
 
 #Prints all the counties in the outage summary
-spans = soup.find_all('span', {'class': "county-panel-outage-info-heading-text"})
-for span in spans:
- #   active_power_outages.append(span.find('span', {'class': 'county-panel-outage-info-text'})[0])
-    counties.append(span.text)  
+divs = soup.find_all('div', {'class': "county-panel-outage-info ng-tns-c0-0 ng-star-inserted"})
+for div in divs:
+    counties.append(div.contents[1].contents[1].text)
+    active_power_outages.append(div.contents[3].contents[3].text)
+    customers_without_power.append(div.contents[5].contents[3].text)
+    customers_served.append(div.contents[7].contents[3].text) 
+print(len(divs))
 print(counties)  
-print(len(spans))
 print(active_power_outages)
+print(customers_without_power)
+print(customers_served)
 
 print('Driver has ended')
