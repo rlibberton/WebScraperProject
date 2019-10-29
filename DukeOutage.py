@@ -4,6 +4,7 @@ from selenium.webdriver.support.ui import WebDriverWait # available since 2.4.0
 from selenium.webdriver.support import expected_conditions as EC # available since 2.26.0
 from selenium.common.exceptions import NoSuchElementException
 from selenium.common.exceptions import TimeoutException
+from datetime import datetime
 from bs4 import BeautifulSoup
 import pandas as pd
 #import MySQLdb
@@ -16,6 +17,7 @@ counties = [] #List to store the name of the counties
 active_power_outages = [] #List to store the active power outages
 customers_without_power = [] #List to store number of customers without power
 customers_served = []
+current_time = []
 driver.get('https://outagemaps.duke-energy.com/#/carolinas') #communicates with webdriver to open URL
 
 try:
@@ -59,7 +61,12 @@ for div in divs:
     active_power_outages.append(div.contents[3].contents[3].text)
     customers_without_power.append(div.contents[5].contents[3].text)
     customers_served.append(div.contents[7].contents[3].text) 
+
+now = datetime.now()
+
+current_time.append(now.strftime("%m/%d/%Y, %H:%M:%S"))
 print(counties)  
 print(active_power_outages)
 print(customers_without_power)
 print(customers_served)
+print(current_time)
