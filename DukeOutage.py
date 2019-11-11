@@ -7,9 +7,23 @@ from selenium.common.exceptions import TimeoutException
 from datetime import datetime
 from bs4 import BeautifulSoup
 import pandas as pd
-#import MySQLdb
+import pymysql
+import pymysql.cursors
 
-#conn = MySQLdb.connect(host='localhost', user='root', passwd='')
+
+def removeComma(poorlyFormatedString):
+    output = ""
+    for c in poorlyFormatedString:
+        if c != ',':
+            output = output + c
+    return output
+
+#Login info
+#
+#
+#
+#
+#
 
 driver = webdriver.Chrome("/usr/local/bin/chromedriver")
 
@@ -55,18 +69,71 @@ except NoSuchElementException:
 content = driver.page_source 
 soup = BeautifulSoup(content, 'lxml')
 
+
+
 divs = soup.find_all('div', {'class': "county-panel-outage-info ng-tns-c0-0 ng-star-inserted"})
 for div in divs:
     counties.append(div.contents[1].contents[1].text)
-    active_power_outages.append(div.contents[3].contents[3].text)
-    customers_without_power.append(div.contents[5].contents[3].text)
-    customers_served.append(div.contents[7].contents[3].text) 
+    active_power_outages.append(int(removeComma(div.contents[3].contents[3].text)))
+    customers_without_power.append(int(removeComma(div.contents[5].contents[3].text)))
+    customers_served.append(int(removeComma(div.contents[7].contents[3].text)))
 
 now = datetime.now()
 
 current_time.append(now.strftime("%m/%d/%Y, %H:%M:%S"))
-print(counties)  
-print(active_power_outages)
-print(customers_without_power)
-print(customers_served)
-print(current_time)
+
+countiesMap = {}
+neededToAddCounties = []
+tester = True
+try:
+   with connection.cursor() as cursor:
+        sql = "SELECT * FROM counties"
+        cursor.execute(sql)
+        results = cursor.fetchall()
+        for county in results:
+            id = county['id']
+            name = county['name']
+            countiesMap[name] = id
+        for county in counties:
+            notFound = True
+            for mappedCounty in countiesMap.keys():
+                if(mappedCounty == county):
+                    notFound=False
+                    break
+            if notFound:
+                neededToAddCounties.append(county)
+        for county in neededToAddCounties:
+            insertCountySql = "INSERT INTO counties (name) VALUES('{}')".format(county)
+            cursor.execute(insertCountySql)
+        connection.commit()
+        tester= False
+finally:
+    if tester:
+        connection.close()
+
+try:
+   with connection.cursor() as cursor:
+        sql = "SELECT * FROM counties"
+        cursor.execute(sql)
+        results = cursor.fetchall()
+        for county in results:
+            id = county['id']
+            name = county['name']
+            countiesMap[name] = id
+
+        thisCountyId=0
+        thisCustomersServed = 0
+        thisCustomersWithoutPower = 0
+
+        for i in range(len(counties)):
+            thisCountyId = countiesMap[counties[i]]
+            thisCustomersServed = customers_served[i]
+            thisCustomersWithoutPower = customers_without_power[i]
+            sql = "INSERT INTO `records` (countyId, customersWithoutPower, customersServed, time) VALUES ({},{},{},'{}')".format(thisCountyId,thisCustomersWithoutPower,thisCustomersServed,now)
+            cursor.execute(sql)
+        connection.commit()
+
+finally:
+    connection.close()
+
+driver.quit()
