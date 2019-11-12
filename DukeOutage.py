@@ -18,7 +18,7 @@ def removeComma(poorlyFormatedString):
             output = output + c
     return output
 
-#Login info
+#login info
 #
 #
 #
@@ -69,7 +69,13 @@ except NoSuchElementException:
 content = driver.page_source 
 soup = BeautifulSoup(content, 'lxml')
 
-
+divs = soup.find_all('div', {'class': 'county-panel-outage-info jurisdiction-summary ng-tns-c0-0 ng-star-inserted'})
+for div in divs:
+    aggregate_counties = div.contents[1].contents[1].text
+    aggregate_active_power_outages = int(removeComma(div.contents[3].contents[3].text))
+    aggregate_total_customers_without_power = int(removeComma(div.contents[5].contents[3].text))
+    aggregate_nc_customers_without_power = int(removeComma(div.contents[8].contents[2].contents[3].text))
+    aggregate_sc_customers_without_power = int(removeComma(div.contents[8].contents[3].contents[3].text))
 
 divs = soup.find_all('div', {'class': "county-panel-outage-info ng-tns-c0-0 ng-star-inserted"})
 for div in divs:
@@ -111,6 +117,12 @@ finally:
     if tester:
         connection.close()
 
+
+with connection.cursor() as cursor:
+    sql = "INSERT INTO `aggregateRecords` (activePowerOutages, customersWithoutPower, NCCustomersWithoutPower, SCCustomersWithoutPower, time) VALUES ({},{},{}, {}, '{}')".format(aggregate_active_power_outages, aggregate_total_customers_without_power, aggregate_nc_customers_without_power, aggregate_sc_customers_without_power, now)
+    cursor.execute(sql)
+    connection.commit()
+
 try:
    with connection.cursor() as cursor:
         sql = "SELECT * FROM counties"
@@ -124,13 +136,24 @@ try:
         thisCountyId=0
         thisCustomersServed = 0
         thisCustomersWithoutPower = 0
-
+        fail=False
         for i in range(len(counties)):
+            fail=False
             thisCountyId = countiesMap[counties[i]]
             thisCustomersServed = customers_served[i]
             thisCustomersWithoutPower = customers_without_power[i]
-            sql = "INSERT INTO `records` (countyId, customersWithoutPower, customersServed, time) VALUES ({},{},{},'{}')".format(thisCountyId,thisCustomersWithoutPower,thisCustomersServed,now)
-            cursor.execute(sql)
+            if cursor.execute('SELECT id from records where id = {}'.format(thisCountyId)) == True:
+                print("sql for record is : " + sql)
+                sql = "INSERT INTO `records` (countyId, customersWithoutPower, customersServed, time) VALUES ({},{},{},'{}')".format(thisCountyId, thisCustomersWithoutPower,thisCustomersServed,now)
+            else:
+                sql = "INSERT INTO `records` (countyId, customersWithoutPower, customersServed, time) VALUES ({},{},{},'{}')".format(thisCountyId,thisCustomersWithoutPower,thisCustomersServed,now)
+            try:
+                fail=True
+                cursor.execute(sql)
+                fail = False
+            finally:
+                if(fail):
+                    print("fail")
         connection.commit()
 
 finally:
